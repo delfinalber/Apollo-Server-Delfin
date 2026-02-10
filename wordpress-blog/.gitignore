@@ -1,0 +1,5 @@
+db_data/
+wp_data/
+.env
+certs/
+

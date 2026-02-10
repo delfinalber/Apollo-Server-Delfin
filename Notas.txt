@@ -1,0 +1,43 @@
+Descargar el .tgz de 
+https://supermarket.chef.io/cookbooks/mysql/versions/11.0.0#knife
+
+
+https://supermarket.chef.io/cookbooks/apparmor/versions/0.9.4
+
+SERIOS PROBLEMAS CON LA INSTALACION VIA 
+# mysql_service 'default' do
+#    port '3306'
+#    version '8.0'
+#    initial_root_password 'password'
+#    bind_address 'localhost'
+#    action [:create]
+#  end
+
+PORQUE EL SERVICIO NO ARRANCA A TIEMPO Y LOS CREATE TABLE Y USER DAN
+ERROR 2002 (HY000): Can't connect to local MySQL server through socket
+
+PARA EJECUTAR PRUEBAS UNITARIAS
+> C:\vagrant-vms\unir-devops\chef-wordpress\chef-repo\cookbooks\apache
+
+chef exec rspec
+
+PARA EJECUTAR PRUEBAS DE INTEGRACION
+
+IMPORTANTE!! el nombre de la "suite" tiene que coincidir con test/integregation/wordpress/serverspect/wordpress_spec.rb!
+
+C:\vagrant-vms\unir-devops\chef-wordpress\chef-repo\cookbooks\apache
+
+Lanza pruebas y destruye la máquina
+kitchen test wordpress-ubuntu-1804
+kitchen tests workdpress-centos-78
+
+Lanza la máquina solamente
+kitchen converge wordpress-ubuntu-1804
+
+Ejecuta pruebas
+kitchen verify wordpress-ubuntu-1804
+
+Destruye la máquina
+kitchen destroy wordpress-ubuntu-1804
+
+

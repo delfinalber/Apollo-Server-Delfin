@@ -1,0 +1,60 @@
+---
+- name: Deploy WordPress via Docker Compose
+  hosts: wordpress
+  become: true
+  vars:
+    project_dir: /opt/wordpress-blog
+    user: ubuntu
+  tasks:
+    - name: Ensure apt cache is up to date
+      apt:
+        update_cache: yes
+
+    - name: Install required packages
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+        state: present
+
+    - name: Install Docker (get.docker.com)
+      shell: curl -fsSL https://get.docker.com | sh
+      args:
+        creates: /usr/bin/docker
+
+    - name: Ensure docker daemon is running
+      service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Ensure project directory exists
+      file:
+        path: "{{ project_dir }}"
+        state: directory
+        owner: "{{ user }}"
+        mode: '0755'
+
+    - name: Copy project files (local -> remote)
+      synchronize:
+        src: ../
+        dest: "{{ project_dir }}"
+        rsync_opts:
+          - "--exclude=.git"
+          - "--exclude=certs"
+      delegate_to: localhost
+
+    - name: Copy .env from example if missing
+      copy:
+        src: "{{ project_dir }}/.env.example"
+        dest: "{{ project_dir }}/.env"
+        remote_src: yes
+      when: not lookup('file', project_dir + '/.env')
+
+    - name: Run docker compose up
+      shell: docker compose up -d
+      args:
+        chdir: "{{ project_dir }}"
