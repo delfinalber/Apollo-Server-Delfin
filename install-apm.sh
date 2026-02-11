@@ -1,33 +1,15 @@
+cat > install-apm-lite.sh << 'EOF'
 #!/bin/bash
 set -e
 
 cd /home/ubuntu/Apollo-Deploy/wordpress-blog
 
-echo "=== Deteniendo contenedores actuales ==="
-sudo docker-compose down 2>/dev/null || true
-
-echo "=== Actualizando docker-compose.yml con APM ==="
+echo "=== Actualizando docker-compose.yml con APM (sin phpMyAdmin) ==="
 cat > docker-compose.yml << 'DOCKER_EOF'
 version: '3.8'
 services:
-  # APM Server - Monitoreo de rendimiento
-  apm-server:
-    image: docker.elastic.co/apm/apm-server:8.10.0
-    restart: always
-    command: apm-server -e -E apm-server.rum.enabled=true -E apm-server.rum.allow_origins=* -E apm-server.rum.allow_headers=*
-    environment:
-      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
-      KIBANA_HOSTS: http://kibana:5601
-    ports:
-      - "8200:8200"
-    networks:
-      - webnet
-    depends_on:
-      - elasticsearch
-
-  # Elasticsearch - Base de datos para APM
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
     restart: always
     environment:
       - discovery.type=single-node
@@ -40,14 +22,24 @@ services:
     networks:
       - webnet
 
-  # Kibana - Visualización del APM
+  apm-server:
+    image: docker.elastic.co/apm/apm-server:8.12.0
+    restart: always
+    command: apm-server -e -E apm-server.rum.enabled=true
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    ports:
+      - "8200:8200"
+    networks:
+      - webnet
+    depends_on:
+      - elasticsearch
+
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.10.0
+    image: docker.elastic.co/kibana/kibana:8.12.0
     restart: always
     environment:
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
-      ELASTICSEARCH_USERNAME: elastic
-      ELASTICSEARCH_PASSWORD: ""
     ports:
       - "5601:5601"
     networks:
@@ -84,19 +76,6 @@ services:
     networks:
       - webnet
 
-  phpmyadmin:
-    image: phpmyadmin:latest
-    depends_on:
-      - db
-    environment:
-      PMA_HOST: db
-      PMA_USER: ${MYSQL_USER}
-      PMA_PASSWORD: ${MYSQL_PASSWORD}
-    ports:
-      - "8080:80"
-    networks:
-      - webnet
-
   nginx:
     image: nginx:stable-alpine
     restart: always
@@ -120,23 +99,27 @@ networks:
     driver: bridge
 DOCKER_EOF
 
-echo "=== Levantando contenedores con APM ==="
+echo "=== Levantando contenedores ==="
 sudo docker-compose up -d
 
-echo "=== Esperando que los servicios se levanten (30s) ==="
-sleep 30
+echo "=== Esperando 60s ==="
+sleep 60
 
-echo "=== Estado de contenedores ==="
 sudo docker-compose ps
 
 echo ""
 echo "=========================================="
-echo "✅ APM INSTALADO EXITOSAMENTE"
+echo "✅ APM INSTALADO (sin phpMyAdmin)"
 echo "=========================================="
 echo ""
-echo "Acceso a los servicios:"
+echo "Servicios disponibles:"
 echo "  • WordPress: http://98.94.9.28"
-echo "  • phpMyAdmin: http://98.94.9.28:8080"
-echo "  • Kibana (APM Dashboard): http://98.94.9.28:5601"
+echo "  • Kibana (APM): http://98.94.9.28:5601"
 echo "  • APM Server: http://98.94.9.28:8200"
 echo ""
+echo "Nota: phpMyAdmin NO está instalado por espacio"
+echo ""
+EOF
+
+chmod +x install-apm-lite.sh
+./install-apm-lite.sh
